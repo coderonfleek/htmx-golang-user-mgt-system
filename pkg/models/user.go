@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+)
 
 type User struct {
 	Id       string
@@ -8,9 +10,9 @@ type User struct {
 	Password string
 	Name     string
 	Category int
-	DOB      time.Time
-	Bio      string
-	Avatar   string
+	DOB      sql.NullTime   //To accept null date columns
+	Bio      sql.NullString //Handles null strings
+	Avatar   sql.NullString
 }
 
-//Password omitted
+//The null properties won't be filled upon registration

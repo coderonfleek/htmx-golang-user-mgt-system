@@ -8,6 +8,7 @@ import (
 
 	"github.com/coderonfleek/user-mgt-system/pkg/models"
 	"github.com/coderonfleek/user-mgt-system/pkg/repository"
+	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -86,6 +87,67 @@ func RegisterHandler(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
 		http.Redirect(w, r, "/login", http.StatusSeeOther) */
 		// Instead of redirecting, set HTTP status code to 204 (not content) and set 'HX-Location' header
 		w.Header().Set("HX-Location", "/login")
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+
+		var errorMessages []string
+
+		// Basic validation
+		if email == "" {
+			errorMessages = append(errorMessages, "Email is required.")
+		}
+		if password == "" {
+			errorMessages = append(errorMessages, "Password is required.")
+		}
+
+		if len(errorMessages) > 0 {
+			templates.ExecuteTemplate(w, "autherrors", errorMessages)
+			return
+		}
+
+		// Retrieve user by email
+		user, err := repository.GetUserByEmail(db, email)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				errorMessages = append(errorMessages, "Invalid email or password")
+				templates.ExecuteTemplate(w, "autherrors", errorMessages)
+				return
+			}
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Compare the hashed password from the DB with the provided password
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+		if err != nil {
+			errorMessages = append(errorMessages, "Invalid email or password")
+			templates.ExecuteTemplate(w, "autherrors", errorMessages)
+
+			return
+		}
+
+		// Create session and authenticate the user
+		session, err := store.Get(r, "logged-in-user")
+		if err != nil {
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		session.Values["user_id"] = user.Id
+		if err := session.Save(r, w); err != nil {
+			http.Error(w, "Error saving session", http.StatusInternalServerError)
+			return
+		}
+
+		// Set HX-Location header and return 204 No Content status
+		w.Header().Set("HX-Location", "/")
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
