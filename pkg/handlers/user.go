@@ -12,11 +12,47 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Homepage(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
+func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		session, err := store.Get(r, "logged-in-user")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
-		tmpl.ExecuteTemplate(w, "home.html", nil)
+		// Check if the user_id is present in the session
+		userID, ok := session.Values["user_id"]
+		if !ok {
+			//w.Header().Set("HX-Location", "/login")
+			/* fmt.Println("Redirecting to /login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther) */ // 303 required for the redirect to happen
+			w.Header().Set("HX-Location", "/login")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
+		// Fetch user details from the database
+		user, err := repository.GetUserById(db, userID.(string)) // Ensure that user ID handling is appropriate for your ID data type
+		if err != nil {
+			if err == sql.ErrNoRows {
+				// No user found, possibly handle by clearing the session or redirecting to login
+				session.Options.MaxAge = -1 // Clear the session
+				session.Save(r, w)
+				//w.Header().Set("HX-Location", "/login")
+				/* fmt.Println("Redirecting to /login")
+				http.Redirect(w, r, "/login", http.StatusSeeOther) */
+				w.Header().Set("HX-Location", "/login")
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// User is logged in and found, render the homepage with user data
+		if err := templates.ExecuteTemplate(w, "home.html", user); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 	}
 }
 

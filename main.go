@@ -51,7 +51,7 @@ func main() {
 	initDB()
 	defer db.Close()
 
-	gRouter.HandleFunc("/", handlers.Homepage(db, tmpl))
+	gRouter.HandleFunc("/", handlers.Homepage(db, tmpl, Store))
 
 	gRouter.HandleFunc("/register", handlers.RegisterPage(db, tmpl)).Methods("GET")
 
