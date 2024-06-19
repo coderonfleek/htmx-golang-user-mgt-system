@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/coderonfleek/user-mgt-system/pkg/models"
 	"github.com/coderonfleek/user-mgt-system/pkg/repository"
@@ -14,7 +17,10 @@ import (
 
 func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		session, err := store.Get(r, "logged-in-user")
+
+		user, _ := CheckLoggedIn(w, r, store, db)
+
+		/* session, err := store.Get(r, "logged-in-user")
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -24,10 +30,9 @@ func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieSt
 		userID, ok := session.Values["user_id"]
 		if !ok {
 			//w.Header().Set("HX-Location", "/login")
-			/* fmt.Println("Redirecting to /login")
-			http.Redirect(w, r, "/login", http.StatusSeeOther) */ // 303 required for the redirect to happen
-			w.Header().Set("HX-Location", "/login")
-			w.WriteHeader(http.StatusNoContent)
+			fmt.Println("Redirecting to /login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther) // 303 required for the redirect to happen
+
 			return
 		}
 
@@ -39,20 +44,93 @@ func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieSt
 				session.Options.MaxAge = -1 // Clear the session
 				session.Save(r, w)
 				//w.Header().Set("HX-Location", "/login")
-				/* fmt.Println("Redirecting to /login")
-				http.Redirect(w, r, "/login", http.StatusSeeOther) */
-				w.Header().Set("HX-Location", "/login")
-				w.WriteHeader(http.StatusNoContent)
+				fmt.Println("Redirecting to /login")
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+
 				return
 			}
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
-		}
+		} */
 
 		// User is logged in and found, render the homepage with user data
 		if err := templates.ExecuteTemplate(w, "home.html", user); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
+	}
+}
+
+func Editpage(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user, _ := CheckLoggedIn(w, r, store, db)
+
+		if err := templates.ExecuteTemplate(w, "editProfile", user); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+	}
+}
+
+func UpdateProfileHandler(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Retrieve the session
+		currentUserProfile, userID := CheckLoggedIn(w, r, store, db)
+
+		// Parse the form
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Failed to parse form", http.StatusBadRequest)
+			return
+		}
+
+		var errorMessages []string
+
+		// Collect and validate form data
+		name := r.FormValue("name")
+		bio := r.FormValue("bio")
+		dobStr := r.FormValue("dob")
+
+		if name == "" {
+			errorMessages = append(errorMessages, "Name is required.")
+		}
+
+		if dobStr == "" {
+			errorMessages = append(errorMessages, "Date of birth is required.")
+		}
+
+		dob, err := time.Parse("2006-01-02", dobStr)
+		if err != nil {
+			errorMessages = append(errorMessages, "Invalid date format.")
+		}
+
+		// Handle validation errors
+		if len(errorMessages) > 0 {
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+			return
+		}
+
+		// Create user struct
+		user := models.User{
+			Id:       userID,
+			Name:     name,
+			DOB:      dob,
+			Bio:      bio,
+			Category: currentUserProfile.Category,
+			Avatar:   currentUserProfile.Avatar,
+		}
+
+		// Call the repository function to update the user
+		if err := repository.UpdateUser(db, userID, user); err != nil {
+			errorMessages = append(errorMessages, "Failed to update user")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+			log.Fatal(err)
+
+			return
+		}
+
+		// Redirect or return success
+		// Set HX-Location header and return 204 No Content status
+		w.Header().Set("HX-Location", "/")
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -186,4 +264,44 @@ func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.Cook
 		w.Header().Set("HX-Location", "/")
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+func CheckLoggedIn(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore, db *sql.DB) (models.User, string) {
+
+	session, err := store.Get(r, "logged-in-user")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return models.User{}, ""
+	}
+
+	// Check if the user_id is present in the session
+	userID, ok := session.Values["user_id"]
+	if !ok {
+		//w.Header().Set("HX-Location", "/login")
+		fmt.Println("Redirecting to /login")
+		http.Redirect(w, r, "/login", http.StatusSeeOther) // 303 required for the redirect to happen
+		/* w.Header().Set("HX-Location", "/login")
+		w.WriteHeader(http.StatusNoContent) */
+		return models.User{}, ""
+	}
+
+	// Fetch user details from the database
+	user, err := repository.GetUserById(db, userID.(string)) // Ensure that user ID handling is appropriate for your ID data type
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No user found, possibly handle by clearing the session or redirecting to login
+			session.Options.MaxAge = -1 // Clear the session
+			session.Save(r, w)
+			//w.Header().Set("HX-Location", "/login")
+			fmt.Println("Redirecting to /login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			/* w.Header().Set("HX-Location", "/login")
+			w.WriteHeader(http.StatusNoContent) */
+			return models.User{}, ""
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return models.User{}, ""
+	}
+
+	return user, userID.(string)
 }

@@ -1,0 +1,50 @@
+
+{{define "editProfile"}}
+
+{{template "header" .}}
+                <h4>Edit Profile</h4>
+                <form id="editProfileForm" novalidate>
+                    <div id="errors"></div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input value="{{ .Name }}" type="text" class="form-control" id="name" name="name" required placeholder="Enter your name">
+                    </div>
+                    <!-- <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input value="{{ .Email }}" type="email" class="form-control" id="email" name="email" required placeholder="example@domain.com">
+                    </div> -->
+                    <div class="mb-3">
+                        <label for="dob" class="form-label">Date of Birth</label>
+                        <input value="{{ .DOBFormatted }}" type="date" class="form-control" id="dob" name="dob" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" id="bio" name="bio" placeholder="Tell us something about yourself">
+                            {{ .Bio }}
+                        </textarea>
+                    </div>
+                    
+                    <button hx-post="/edit" hx-target="#errors" type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+                <!-- <p><strong>Email Address:</strong> {{ .Email }}</p>
+                
+                <p><strong>Date of Birth:</strong> {{or .DOBFormatted "N/A"}}</p>
+                <p><strong>Bio:</strong> {{ .Bio }}</p>
+                <p><strong>Role:</strong> 
+                    
+                    {{if eq .Category 0}}
+                    <i class="fas fa-user-tie"></i>
+                    Admin
+                    {{else if eq .Category 1}}
+                    <i class="fas fa-user-graduate"></i>
+                    Student
+                    {{else if eq .Category 2}}
+                    <i class="fa-solid fa-person-chalkboard"></i>
+                    Instructor
+                    
+                    {{end}}
+                </p> -->
+
+{{template "footer"}}
+
+{{end}}

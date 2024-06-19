@@ -2,17 +2,17 @@ package models
 
 import (
 	"database/sql"
+	"time"
 )
 
 type User struct {
-	Id       string
-	Email    string
-	Password string
-	Name     string
-	Category int
-	DOB      sql.NullTime   //To accept null date columns
-	Bio      sql.NullString //Handles null strings
-	Avatar   sql.NullString
+	Id           string
+	Email        string
+	Password     string
+	Name         string
+	Category     int
+	DOB          time.Time //To accept null date columns
+	DOBFormatted string
+	Bio          string //Handles null strings
+	Avatar       sql.NullString
 }
-
-//The null properties won't be filled upon registration

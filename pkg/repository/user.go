@@ -46,6 +46,9 @@ func GetUserById(db *sql.DB, id string) (models.User, error) {
 		return user, err
 	}
 
+	// Format the date using a friendly format, e.g., "Jan 2, 2006"
+	user.DOBFormatted = user.DOB.Format("2006-01-02")
+
 	return user, nil
 
 }
