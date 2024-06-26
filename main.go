@@ -51,8 +51,13 @@ func main() {
 	initDB()
 	defer db.Close()
 
-	fs := http.FileServer(http.Dir("uploads"))
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", fs))
+	// Setup Static file handling for images
+	/* fs := http.FileServer(http.Dir("uploads"))
+	gRouter.Handle("/uploads/", http.StripPrefix("/uploads/", fs)) */
+	fileServer := http.FileServer(http.Dir("./uploads"))
+	gRouter.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads", fileServer))
+
+	//All dynamic routes
 
 	gRouter.HandleFunc("/", handlers.Homepage(db, tmpl, Store))
 
