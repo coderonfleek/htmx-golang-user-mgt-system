@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -14,5 +13,5 @@ type User struct {
 	DOB          time.Time //To accept null date columns
 	DOBFormatted string
 	Bio          string //Handles null strings
-	Avatar       sql.NullString
+	Avatar       string
 }

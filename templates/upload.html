@@ -1,0 +1,22 @@
+
+{{define "uploadAvatar"}}
+
+{{template "header" .}}
+                <h4>Upload New Avatar</h4>
+                <form  class="form">
+                    <div id="errors"></div>
+                    <div class="mb-3">
+                        <label for="avatarInput" class="form-label">Select Avatar Image</label>
+                        <input type="file" class="form-control" id="avatarInput" name="avatar" required>
+                    </div>
+                    <button 
+                        hx-post="/upload-avatar" 
+                        hx-encoding="multipart/form-data" 
+                        hx-target="#errors" 
+                        type="submit" class="btn btn-primary">Upload Avatar</button>
+                </form>
+
+{{template "footer"}}
+
+{{end}}
+            

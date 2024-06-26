@@ -9,7 +9,11 @@
 </head>
 <body>
     <div class="header-container text-center">
+        {{if .Avatar}}
+        <img src="/uploads/{{.Avatar}}" class="profile-image" alt="User Avatar">
+        {{else}}
         <img src="https://via.placeholder.com/150" class="profile-image" alt="User Avatar">
+        {{end}}
         <h1>{{ .Name }}</h1>
         <p class="lead">
             {{if eq .Category 0}}
@@ -31,7 +35,7 @@
                         Profile
                     </a>
                     <a href="/edit" class="list-group-item list-group-item-action">Edit Profile</a>
-                    <a href="#" class="list-group-item list-group-item-action">Change Avatar</a>
+                    <a href="/upload-avatar" class="list-group-item list-group-item-action">Change Avatar</a>
                     <a href="#" class="list-group-item list-group-item-action">Logout</a>
                 </div>
             </div>

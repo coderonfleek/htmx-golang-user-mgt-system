@@ -89,8 +89,13 @@ func CreateUser(db *sql.DB, user models.User) error {
 }
 
 func UpdateUser(db *sql.DB, id string, user models.User) error {
-	_, err := db.Exec("UPDATE users SET name = ?, category = ?, dob = ?, bio = ?, avatar = ? WHERE id = ?", user.Name, user.Category, user.DOB, user.Bio, user.Avatar, id)
+	_, err := db.Exec("UPDATE users SET name = ?, category = ?, dob = ?, bio = ? WHERE id = ?", user.Name, user.Category, user.DOB, user.Bio, id)
 
+	return err
+}
+
+func UpdateUserAvatar(db *sql.DB, userID, filePath string) error {
+	_, err := db.Exec("UPDATE users SET avatar = ? WHERE id = ?", filePath, userID)
 	return err
 }
 

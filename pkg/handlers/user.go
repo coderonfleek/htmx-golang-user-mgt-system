@@ -4,13 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/coderonfleek/user-mgt-system/pkg/models"
 	"github.com/coderonfleek/user-mgt-system/pkg/repository"
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -115,7 +119,6 @@ func UpdateProfileHandler(db *sql.DB, tmpl *template.Template, store *sessions.C
 			DOB:      dob,
 			Bio:      bio,
 			Category: currentUserProfile.Category,
-			Avatar:   currentUserProfile.Avatar,
 		}
 
 		// Call the repository function to update the user
@@ -129,6 +132,90 @@ func UpdateProfileHandler(db *sql.DB, tmpl *template.Template, store *sessions.C
 
 		// Redirect or return success
 		// Set HX-Location header and return 204 No Content status
+		w.Header().Set("HX-Location", "/")
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func AvatarPage(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user, _ := CheckLoggedIn(w, r, store, db)
+
+		if err := tmpl.ExecuteTemplate(w, "uploadAvatar", user); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+	}
+}
+
+func UploadAvatarHandler(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		_, userID := CheckLoggedIn(w, r, store, db)
+
+		// Initialize error messages slice
+		var errorMessages []string
+
+		// Parse the multipart form, 10 MB max upload size
+		r.ParseMultipartForm(10 << 20)
+
+		// Retrieve the file from form data
+		file, handler, err := r.FormFile("avatar")
+		if err != nil {
+			if err == http.ErrMissingFile {
+				errorMessages = append(errorMessages, "No file submitted")
+			} else {
+				errorMessages = append(errorMessages, "Error retrieving the file")
+			}
+
+			if len(errorMessages) > 0 {
+				tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+				return
+			}
+
+		}
+		defer file.Close()
+
+		// Generate a unique filename to prevent overwriting and conflicts
+		uuid, err := uuid.NewRandom()
+		if err != nil {
+			errorMessages = append(errorMessages, "Error generating unique identifier")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+
+			return
+		}
+		filename := uuid.String() + filepath.Ext(handler.Filename) // Append the file extension
+
+		// Create the full path for saving the file
+		filePath := filepath.Join("uploads", filename)
+
+		// Save the file to the server
+		dst, err := os.Create(filePath)
+		if err != nil {
+			errorMessages = append(errorMessages, "Error saving the file")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+
+			return
+		}
+		defer dst.Close()
+		if _, err = io.Copy(dst, file); err != nil {
+			errorMessages = append(errorMessages, "Error saving the file")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+			return
+		}
+
+		// Update the user's avatar in the database
+		//userID := r.FormValue("userID") // Assuming you pass the userID somehow
+		if err := repository.UpdateUserAvatar(db, userID, filename); err != nil {
+			errorMessages = append(errorMessages, "Error updating user avatar")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+
+			log.Fatal(err)
+			return
+		}
+
+		//Navigate to the profile page after the update
 		w.Header().Set("HX-Location", "/")
 		w.WriteHeader(http.StatusNoContent)
 	}
