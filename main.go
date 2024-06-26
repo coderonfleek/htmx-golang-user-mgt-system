@@ -52,8 +52,7 @@ func main() {
 	defer db.Close()
 
 	// Setup Static file handling for images
-	/* fs := http.FileServer(http.Dir("uploads"))
-	gRouter.Handle("/uploads/", http.StripPrefix("/uploads/", fs)) */
+
 	fileServer := http.FileServer(http.Dir("./uploads"))
 	gRouter.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads", fileServer))
 
@@ -76,6 +75,8 @@ func main() {
 	gRouter.HandleFunc("/upload-avatar", handlers.AvatarPage(db, tmpl, Store)).Methods("GET")
 
 	gRouter.HandleFunc("/upload-avatar", handlers.UploadAvatarHandler(db, tmpl, Store)).Methods("POST")
+
+	gRouter.HandleFunc("/logout", handlers.LogoutHandler(Store)).Methods("GET")
 
 	http.ListenAndServe(":4000", gRouter)
 

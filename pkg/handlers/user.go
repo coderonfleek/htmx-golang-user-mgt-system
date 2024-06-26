@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+func Homepage(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		user, _ := CheckLoggedIn(w, r, store, db)
@@ -58,18 +58,18 @@ func Homepage(db *sql.DB, templates *template.Template, store *sessions.CookieSt
 		} */
 
 		// User is logged in and found, render the homepage with user data
-		if err := templates.ExecuteTemplate(w, "home.html", user); err != nil {
+		if err := tmpl.ExecuteTemplate(w, "home.html", user); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	}
 }
 
-func Editpage(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+func Editpage(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		user, _ := CheckLoggedIn(w, r, store, db)
 
-		if err := templates.ExecuteTemplate(w, "editProfile", user); err != nil {
+		if err := tmpl.ExecuteTemplate(w, "editProfile", user); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	}
@@ -152,7 +152,7 @@ func UploadAvatarHandler(db *sql.DB, tmpl *template.Template, store *sessions.Co
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		_, userID := CheckLoggedIn(w, r, store, db)
+		user, userID := CheckLoggedIn(w, r, store, db)
 
 		// Initialize error messages slice
 		var errorMessages []string
@@ -213,6 +213,18 @@ func UploadAvatarHandler(db *sql.DB, tmpl *template.Template, store *sessions.Co
 
 			log.Fatal(err)
 			return
+		}
+
+		//Delete current image from the initial fetch of the user
+		if user.Avatar != "" {
+			oldAvatarPath := filepath.Join("uploads", user.Avatar)
+
+			//Check if the oldPath is not the same as the new path
+			if oldAvatarPath != filePath {
+				if err := os.Remove(oldAvatarPath); err != nil {
+					fmt.Printf("Warning: failed to delete old avatar file: %s\n", err)
+				}
+			}
 		}
 
 		//Navigate to the profile page after the update
@@ -292,7 +304,7 @@ func RegisterHandler(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
 	}
 }
 
-func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+func LoginHandler(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		email := r.FormValue("email")
@@ -309,7 +321,7 @@ func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.Cook
 		}
 
 		if len(errorMessages) > 0 {
-			templates.ExecuteTemplate(w, "autherrors", errorMessages)
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
 			return
 		}
 
@@ -318,7 +330,7 @@ func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.Cook
 		if err != nil {
 			if err == sql.ErrNoRows {
 				errorMessages = append(errorMessages, "Invalid email or password")
-				templates.ExecuteTemplate(w, "autherrors", errorMessages)
+				tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
 				return
 			}
 
@@ -330,7 +342,7 @@ func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.Cook
 		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 		if err != nil {
 			errorMessages = append(errorMessages, "Invalid email or password")
-			templates.ExecuteTemplate(w, "autherrors", errorMessages)
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
 
 			return
 		}
@@ -350,6 +362,33 @@ func LoginHandler(db *sql.DB, templates *template.Template, store *sessions.Cook
 		// Set HX-Location header and return 204 No Content status
 		w.Header().Set("HX-Location", "/")
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func LogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, err := store.Get(r, "logged-in-user")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Remove the user from the session
+		delete(session.Values, "user_id")
+
+		// Save the changes to the session
+		if err = session.Save(r, w); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Clear the session cookie
+		session.Options.MaxAge = -1
+		session.Save(r, w)
+
+		// Redirect to login page
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
 }
 
