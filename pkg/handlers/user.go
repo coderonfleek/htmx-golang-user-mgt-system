@@ -295,9 +295,6 @@ func RegisterHandler(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
 			return
 		}
 
-		/* // Successfully created user
-		// Redirect to login on successful registration
-		http.Redirect(w, r, "/login", http.StatusSeeOther) */
 		// Instead of redirecting, set HTTP status code to 204 (not content) and set 'HX-Location' header
 		w.Header().Set("HX-Location", "/login")
 		w.WriteHeader(http.StatusNoContent)
