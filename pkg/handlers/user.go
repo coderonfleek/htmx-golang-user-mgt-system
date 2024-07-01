@@ -287,6 +287,11 @@ func RegisterHandler(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
 		}
 		user.Password = string(hashedPassword)
 
+		//Set default values
+		user.DOB = time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC)
+		user.Bio = "Bio goes here"
+		user.Avatar = ""
+
 		// Create user in the database
 		err = repository.CreateUser(db, user)
 		if err != nil {

@@ -72,14 +72,14 @@ func CreateUser(db *sql.DB, user models.User) error {
 	//Convert id to string and set it on the user
 	user.Id = id.String()
 
-	stmt, err := db.Prepare("INSERT INTO users (id, email, password, name, category) VALUES (?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO users (id, email, password, name, category, dob, bio, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
 
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Id, user.Email, user.Password, user.Name, user.Category)
+	_, err = stmt.Exec(user.Id, user.Email, user.Password, user.Name, user.Category, user.DOB, user.Bio, user.Avatar)
 
 	if err != nil {
 		return err
