@@ -1,0 +1,44 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    {{template "libs"}}
+</head>
+<body>
+    <div class="header-container text-center">
+        {{if .Avatar}}
+        <img src="uploads/{{.Avatar}}" class="profile-image" alt="User Avatar">
+        {{else}}
+        <img src="https://via.placeholder.com/150" class="profile-image" alt="User Avatar">
+        {{end}}
+        <h1>{{ .Name }}</h1>
+        <p class="lead">
+            {{if eq .Category 0}}
+            Admin
+            {{else if eq .Category 1}}
+            Student
+            {{else if eq .Category 2}}
+            Instructor
+            
+            {{end}}
+        </p> <!-- Change icon based on role -->
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="list-group">
+                    <a href="/" class="list-group-item list-group-item-action active" aria-current="true">
+                        Profile
+                    </a>
+                    <a href="/edit" class="list-group-item list-group-item-action">Edit Profile</a>
+                    <a href="/upload-avatar" class="list-group-item list-group-item-action">Change Avatar</a>
+                    <a href="/logout" class="list-group-item list-group-item-action">Logout</a>
+                </div>
+            </div>
+            <div class="col-md-8">
+
+{{end}}

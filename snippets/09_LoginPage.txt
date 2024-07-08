@@ -1,0 +1,7 @@
+func LoginPage(db *sql.DB, tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		tmpl.ExecuteTemplate(w, "login", nil)
+
+	}
+}

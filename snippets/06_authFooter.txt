@@ -1,0 +1,6 @@
+{{define "authFooter"}}
+
+    </body>
+</html>
+
+{{end}}

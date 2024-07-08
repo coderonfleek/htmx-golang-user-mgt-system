@@ -1,0 +1,22 @@
+{{template "header" .}}
+                <h4>Profile Information</h4>
+                <p><strong>Email Address:</strong> {{ .Email }}</p>
+                
+                <p><strong>Date of Birth:</strong> {{or .DOBFormatted "N/A"}}</p>
+                <p><strong>Bio:</strong> {{ .Bio }}</p>
+                <p><strong>Role:</strong> 
+                    
+                    {{if eq .Category 0}}
+                    <i class="fas fa-user-tie"></i>
+                    Admin
+                    {{else if eq .Category 1}}
+                    <i class="fas fa-user-graduate"></i>
+                    Student
+                    {{else if eq .Category 2}}
+                    <i class="fa-solid fa-person-chalkboard"></i>
+                    Instructor
+                    
+                    {{end}}
+                </p>
+
+{{template "footer"}}

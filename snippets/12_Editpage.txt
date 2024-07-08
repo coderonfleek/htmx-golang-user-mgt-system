@@ -1,0 +1,10 @@
+func Editpage(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user, _ := CheckLoggedIn(w, r, store, db)
+
+		if err := tmpl.ExecuteTemplate(w, "editProfile", user); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+	}
+}

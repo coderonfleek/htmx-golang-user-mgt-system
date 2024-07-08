@@ -1,0 +1,61 @@
+func UpdateProfileHandler(db *sql.DB, tmpl *template.Template, store *sessions.CookieStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Retrieve the session
+		currentUserProfile, userID := CheckLoggedIn(w, r, store, db)
+
+		// Parse the form
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Failed to parse form", http.StatusBadRequest)
+			return
+		}
+
+		var errorMessages []string
+
+		// Collect and validate form data
+		name := r.FormValue("name")
+		bio := r.FormValue("bio")
+		dobStr := r.FormValue("dob")
+
+		if name == "" {
+			errorMessages = append(errorMessages, "Name is required.")
+		}
+
+		if dobStr == "" {
+			errorMessages = append(errorMessages, "Date of birth is required.")
+		}
+
+		dob, err := time.Parse("2006-01-02", dobStr)
+		if err != nil {
+			errorMessages = append(errorMessages, "Invalid date format.")
+		}
+
+		// Handle validation errors
+		if len(errorMessages) > 0 {
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+			return
+		}
+
+		// Create user struct
+		user := models.User{
+			Id:       userID,
+			Name:     name,
+			DOB:      dob,
+			Bio:      bio,
+			Category: currentUserProfile.Category,
+		}
+
+		// Call the repository function to update the user
+		if err := repository.UpdateUser(db, userID, user); err != nil {
+			errorMessages = append(errorMessages, "Failed to update user")
+			tmpl.ExecuteTemplate(w, "autherrors", errorMessages)
+			log.Fatal(err)
+
+			return
+		}
+
+		// Redirect or return success
+		// Set HX-Location header and return 204 No Content status
+		w.Header().Set("HX-Location", "/")
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

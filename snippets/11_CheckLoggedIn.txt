@@ -1,0 +1,37 @@
+func CheckLoggedIn(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore, db *sql.DB) (models.User, string) {
+
+	session, err := store.Get(r, "logged-in-user")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return models.User{}, ""
+	}
+
+	// Check if the user_id is present in the session
+	userID, ok := session.Values["user_id"]
+	if !ok {
+		
+		fmt.Println("Redirecting to /login")
+		http.Redirect(w, r, "/login", http.StatusSeeOther) // 303 required for the redirect to happen
+		
+		return models.User{}, ""
+	}
+
+	// Fetch user details from the database
+	user, err := repository.GetUserById(db, userID.(string)) // Ensure that user ID handling is appropriate for your ID data type
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No user found, possibly handle by clearing the session or redirecting to login
+			session.Options.MaxAge = -1 // Clear the session
+			session.Save(r, w)
+			
+			fmt.Println("Redirecting to /login")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			
+			return models.User{}, ""
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return models.User{}, ""
+	}
+
+	return user, userID.(string)
+}

@@ -1,0 +1,41 @@
+{{define "register"}}
+
+{{template "authHeader"}}
+
+<!-- Registration Form -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Register</h2>
+            <form>
+                <!-- Errors go here -->
+                <div class="mb-3">
+                    <label for="fullName" class="form-label">Full Name</label>
+                    <input type="text" name="name" class="form-control" id="fullName" placeholder="Enter full name">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Enter email">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" id="password" placeholder="Password">
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="category" class="form-select" id="category">
+                        <option value="1">Student</option>
+                        <option value="2">Instructor</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary">Register</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+{{template "authFooter"}}
+
+{{end}}

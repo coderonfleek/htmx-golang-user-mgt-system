@@ -1,0 +1,2 @@
+fileServer := http.FileServer(http.Dir("./uploads"))
+gRouter.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads", fileServer))

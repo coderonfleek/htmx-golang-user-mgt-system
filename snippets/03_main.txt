@@ -1,0 +1,54 @@
+package main
+
+import (
+	"database/sql"
+	"html/template"
+	"log"
+	"net/http"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
+	
+)
+
+var tmpl *template.Template
+var db *sql.DB
+
+
+func init() {
+	tmpl, _ = template.ParseGlob("templates/*.html")
+
+}
+
+func initDB() {
+	var err error
+	// Initialize the db variable
+	db, err = sql.Open("mysql", "root:root@(127.0.0.1:3333)/testdb?parseTime=true")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Check the database connection
+	if err = db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func main() {
+
+	gRouter := mux.NewRouter()
+
+	//Setup MySQL
+	initDB()
+	defer db.Close()
+
+	//All dynamic routes
+
+	gRouter.HandleFunc("/", func (w http.ResponseWriter, r *http.Request) {
+
+		tmpl.ExecuteTemplate(w, "home.html", nil)
+	
+	})
+
+	http.ListenAndServe(":4000", gRouter)
+
+}
